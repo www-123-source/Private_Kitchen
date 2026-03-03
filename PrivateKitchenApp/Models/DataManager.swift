@@ -1,6 +1,22 @@
 import Foundation
 import SwiftUI
 import SwiftData
+import CloudKit
+
+// 购物车模型
+@Model
+class CartItem: Identifiable {
+    var id = UUID()
+    var dish: Dish
+    var quantity: Int
+    var addedAt: Date
+
+    init(dish: Dish, quantity: Int = 1) {
+        self.dish = dish
+        self.quantity = quantity
+        self.addedAt = Date()
+    }
+}
 
 // 数据管理器 - 统一管理所有数据模型的CRUD操作
 @MainActor
@@ -11,9 +27,11 @@ class DataManager: ObservableObject {
     @Published var error: String?
 
     private let modelContext: ModelContext
+    private let cloudKitManager: CloudKitManager?
 
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext, cloudKitEnabled: Bool = true) {
         self.modelContext = modelContext
+        self.cloudKitManager = cloudKitEnabled ? CloudKitManager(modelContext: modelContext) : nil
     }
 
     // MARK: - 家庭管理
@@ -31,6 +49,9 @@ class DataManager: ObservableObject {
             modelContext.insert(admin)
             try modelContext.save()
 
+            // 同步到云端
+            Task { await syncFamilyToCloud(family) }
+
             currentFamily = family
             currentUser = admin
             return family
@@ -44,7 +65,7 @@ class DataManager: ObservableObject {
     func joinFamily(familyCode: String, memberName: String) -> Bool {
         do {
             // 这里应该通过familyCode查找家庭
-            // 目前简化实现，假设我们知道家庭
+            // 目前简化实现,假设我们知道家庭
             guard let family = currentFamily else {
                 error = "请先选择家庭"
                 return false
@@ -57,6 +78,9 @@ class DataManager: ObservableObject {
             modelContext.insert(member)
             try modelContext.save()
 
+            // 同步到云端
+            Task { await syncMemberToCloud(member) }
+
             currentUser = member
             return true
         } catch {
@@ -68,7 +92,7 @@ class DataManager: ObservableObject {
     // MARK: - 菜品管理
 
     /// 添加菜品
-    func addDish(name: String, description: String, price: Double, category: DishCategory, imageData: Data? = nil) -> Dish? {
+    func addDish(name: String, description: String, category: DishCategory, imageData: Data? = nil) -> Dish? {
         guard let family = currentFamily else {
             error = "请先选择家庭"
             return nil
@@ -78,7 +102,6 @@ class DataManager: ObservableObject {
             let dish = Dish(
                 name: name,
                 description: description,
-                price: price,
                 category: category,
                 image: imageData,
                 isAvailable: true
@@ -89,6 +112,9 @@ class DataManager: ObservableObject {
             modelContext.insert(dish)
             try modelContext.save()
 
+            // 同步到云端
+            Task { await syncDishToCloud(dish) }
+
             return dish
         } catch {
             error = "添加菜品失败: \(error.localizedDescription)"
@@ -97,17 +123,20 @@ class DataManager: ObservableObject {
     }
 
     /// 更新菜品
-    func updateDish(_ dish: Dish, name: String, description: String, price: Double, category: DishCategory, imageData: Data? = nil, isAvailable: Bool = true) -> Bool {
+    func updateDish(_ dish: Dish, name: String, description: String, category: DishCategory, imageData: Data? = nil, isAvailable: Bool = true) -> Bool {
         do {
             dish.name = name
             dish.description = description
-            dish.price = price
             dish.category = category
             dish.image = imageData
             dish.isAvailable = isAvailable
             dish.updatedAt = Date()
 
             try modelContext.save()
+
+            // 同步到云端
+            Task { await syncDishToCloud(dish) }
+
             return true
         } catch {
             error = "更新菜品失败: \(error.localizedDescription)"
@@ -118,6 +147,9 @@ class DataManager: ObservableObject {
     /// 删除菜品
     func deleteDish(_ dish: Dish) -> Bool {
         do {
+            // 从云端删除
+            Task { await deleteDishFromCloud(dish) }
+
             modelContext.delete(dish)
             try modelContext.save()
             return true
@@ -132,99 +164,213 @@ class DataManager: ObservableObject {
         dish.isAvailable = !dish.isAvailable
         dish.updatedAt = Date()
 
+        // 同步到云端
+        Task { await syncDishToCloud(dish) }
+
         return saveContext()
     }
 
-    // MARK: - 订单管理
+    // MARK: - 今日餐单管理
 
-    /// 创建订单
-    func createOrder(items: [OrderItem], note: String? = nil) -> Order? {
+    /// 添加今日餐单
+    func addToDailyMenu(mealType: MealType, dish: Dish, note: String? = nil) -> DailyMenu? {
         guard let family = currentFamily,
               let member = currentUser else {
             error = "请先选择家庭和用户"
             return nil
         }
 
-        // 验证订单项
-        guard !items.isEmpty else {
-            error = "订单不能为空"
-            return nil
-        }
-
-        // 验证所有菜品都可用
-        let dishIDs = items.map { $0.dishId }
-        let unavailableDishes = family.dishes.filter { !isDishAvailable($0, ids: dishIDs) }
-        if !unavailableDishes.isEmpty {
-            error = "部分菜品已下架"
-            return nil
-        }
-
         do {
-            let totalAmount = items.reduce(0) { $0 + ($1.price * Double($1.quantity)) }
-            let order = Order(
-                orderNumber: generateOrderNumber(),
-                status: .pending,
-                totalAmount: totalAmount,
-                member: member,
+            let dailyMenu = DailyMenu(
+                mealType: mealType,
+                memberId: member.id,
+                dishId: dish.id,
+                dishName: dish.name,
+                memberName: member.name,
                 note: note
             )
-            order.family = family
-            order.items = items
+            dailyMenu.family = family
 
-            modelContext.insert(order)
-
-            // 添加订单到成员的订单列表
-            member.orders.append(order)
-            family.orders.append(order)
-
+            modelContext.insert(dailyMenu)
             try modelContext.save()
 
-            return order
+            // 同步到云端
+            Task { await syncDailyMenuToCloud(dailyMenu) }
+
+            return dailyMenu
         } catch {
-            error = "创建订单失败: \(error.localizedDescription)"
+            error = "添加今日餐单失败: \(error.localizedDescription)"
             return nil
         }
     }
 
-    /// 更新订单状态
-    func updateOrderStatus(_ order: Order, status: OrderStatus) -> Bool {
+    /// 获取今日餐单
+    func getTodayDailyMenus() -> [DailyMenu] {
+        guard let family = currentFamily else { return [] }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+
+        return family.dailyMenus.filter {
+            $0.createdAt >= today && $0.createdAt < tomorrow
+        }
+    }
+
+    /// 获取今日餐单按餐次分组
+    func getTodayDailyMenusByMealType() -> [MealType: [DailyMenu]] {
+        let todayMenus = getTodayDailyMenus()
+        var grouped: [MealType: [DailyMenu]] = [:]
+
+        for menu in todayMenus {
+            grouped[menu.mealType, default: []].append(menu)
+        }
+
+        return grouped
+    }
+
+    /// 清空今日餐单
+    func clearDailyMenus() -> Bool {
+        guard let family = currentFamily else {
+            error = "请先选择家庭"
+            return false
+        }
+
         do {
-            order.status = status
-            if status == .delivered {
-                order.completedAt = Date()
+            // 删除所有今日餐单
+            let descriptor = FetchDescriptor<DailyMenu>()
+            let menus = try modelContext.fetch(descriptor)
+
+            for menu in menus {
+                modelContext.delete(menu)
             }
 
             try modelContext.save()
             return true
         } catch {
-            error = "更新订单状态失败: \(error.localizedDescription)"
+            error = "清空今日餐单失败: \(error.localizedDescription)"
             return false
         }
     }
 
-    /// 取消订单
-    func cancelOrder(_ order: Order) -> Bool {
-        return updateOrderStatus(order, status: .cancelled)
+    // MARK: - 想吃菜品管理
+
+    /// 添加想吃菜品
+    func addToWantedDish(name: String, ingredients: String, seasonings: String, cookingSteps: String, recipeId: UUID? = nil) -> WantedDish? {
+        guard let family = currentFamily,
+              let member = currentUser else {
+            error = "请先选择家庭和用户"
+            return nil
+        }
+
+        do {
+            let wantedDish = WantedDish(
+                memberId: member.id,
+                memberName: member.name,
+                name: name,
+                ingredients: ingredients,
+                seasonings: seasonings,
+                cookingSteps: cookingSteps
+            )
+            wantedDish.family = family
+            wantedDish.recipeId = recipeId
+
+            modelContext.insert(wantedDish)
+            try modelContext.save()
+
+            // 同步到云端
+            Task { await syncWantedDishToCloud(wantedDish) }
+
+            return wantedDish
+        } catch {
+            error = "添加想吃菜品失败: \(error.localizedDescription)"
+            return nil
+        }
     }
 
-    // MARK: - 购物车管理
+    /// 获取想吃菜品列表
+    func getWantedDishes() -> [WantedDish] {
+        guard let family = currentFamily else { return [] }
 
-    /// 创建购物车项
-    func createCartItem(dish: Dish, quantity: Int = 1) -> CartItem? {
-        return CartItem(dish: dish, quantity: quantity)
+        return family.wantedDishes.sorted { $0.createdAt > $1.createdAt }
     }
 
-    /// 更新购物车项数量
-    func updateCartItemQuantity(_ cartItem: CartItem, quantity: Int) -> Bool {
-        cartItem.quantity = quantity
-        return true
+    /// 删除想吃菜品
+    func deleteWantedDish(_ wantedDish: WantedDish) -> Bool {
+        do {
+            // 从云端删除
+            Task { await deleteWantedDishFromCloud(wantedDish) }
+
+            modelContext.delete(wantedDish)
+            try modelContext.save()
+            return true
+        } catch {
+            error = "删除想吃菜品失败: \(error.localizedDescription)"
+            return false
+        }
     }
 
-    /// 从购物车移除项
-    func removeCartItem(_ cartItem: CartItem) -> Bool {
-        // 在SwiftData中需要通过context删除
-        // 这里简化处理
-        return true
+    // MARK: - 统计管理
+
+    /// 添加统计记录
+    func addOrderStatistics(memberId: UUID, dishId: UUID, dishName: String, statisticsType: StatisticsType) -> OrderStatistics? {
+        guard let family = currentFamily else {
+            error = "请先选择家庭"
+            return nil
+        }
+
+        do {
+            // 检查是否已存在相同记录
+            if let existing = getStatistics(memberId: memberId, dishId: dishId, statisticsType: statisticsType) {
+                existing.updateWithOrder()
+                try modelContext.save()
+
+                // 同步到云端
+                Task { await syncStatisticsToCloud(existing) }
+
+                return existing
+            }
+
+            let statistics = OrderStatistics(
+                memberId: memberId,
+                dishId: dishId,
+                dishName: dishName,
+                totalOrders: 1,
+                lastOrderedAt: Date(),
+                statisticsType: statisticsType
+            )
+            statistics.family = family
+
+            modelContext.insert(statistics)
+            try modelContext.save()
+
+            // 同步到云端
+            Task { await syncStatisticsToCloud(statistics) }
+
+            return statistics
+        } catch {
+            error = "添加统计记录失败: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    /// 获取统计记录
+    func getStatistics(memberId: UUID, dishId: UUID, statisticsType: StatisticsType) -> OrderStatistics? {
+        guard let family = currentFamily else { return nil }
+
+        return family.orderStatistics.first {
+            $0.memberId == memberId &&
+            $0.dishId == dishId &&
+            $0.statisticsType == statisticsType
+        }
+    }
+
+    /// 获取统计列表
+    func getStatisticsList(statisticsType: StatisticsType) -> [OrderStatistics] {
+        guard let family = currentFamily else { return [] }
+
+        return family.orderStatistics.filter { $0.statisticsType == statisticsType }
+            .sorted { $0.totalOrders > $1.totalOrders }
     }
 
     // MARK: - 成员管理
@@ -243,6 +389,9 @@ class DataManager: ObservableObject {
 
             modelContext.insert(member)
             try modelContext.save()
+
+            // 同步到云端
+            Task { await syncMemberToCloud(member) }
 
             return member
         } catch {
@@ -273,22 +422,6 @@ class DataManager: ObservableObject {
         return currentFamily?.dishes.filter { $0.isAvailable } ?? []
     }
 
-    /// 获取所有订单
-    func getAllOrders() -> [Order] {
-        return currentFamily?.orders.sorted { $0.createdAt > $1.createdAt } ?? []
-    }
-
-    /// 获取用户订单
-    func getUserOrders() -> [Order] {
-        guard let member = currentUser else { return [] }
-        return member.orders.sorted { $0.createdAt > $1.createdAt }
-    }
-
-    /// 获取特定状态的订单
-    func getOrdersByStatus(_ status: OrderStatus) -> [Order] {
-        return currentFamily?.orders.filter { $0.status == status }.sorted { $0.createdAt > $1.createdAt } ?? []
-    }
-
     /// 获取所有成员
     func getFamilyMembers() -> [FamilyMember] {
         return currentFamily?.members.sorted { $0.joinedAt < $1.joinedAt } ?? []
@@ -299,26 +432,69 @@ class DataManager: ObservableObject {
         return currentFamily?.dishes.first { $0.id == id }
     }
 
-    /// 查找订单
-    func findOrder(id: UUID) -> Order? {
-        return currentFamily?.orders.first { $0.id == id }
-    }
-
     /// 查找成员
     func findMember(id: UUID) -> FamilyMember? {
         return currentFamily?.members.first { $0.id == id }
     }
 
-    // MARK: - 工具方法
+    // MARK: - CloudKit 同步方法
 
-    /// 生成订单号
-    private func generateOrderNumber() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd"
-        let dateStr = formatter.string(from: Date())
-        let random = String(format: "%04d", Int.random(in: 0...9999))
-        return "\(dateStr)\(random)"
+    /// 手动同步所有数据
+    func syncAllData() async {
+        await cloudKitManager?.syncAllData()
     }
+
+    /// 同步家庭到云端
+    private func syncFamilyToCloud(_ family: Family) async {
+        await cloudKitManager?.syncFamily(family)
+    }
+
+    /// 同步成员到云端
+    private func syncMemberToCloud(_ member: FamilyMember) async {
+        await cloudKitManager?.syncMember(member)
+    }
+
+    /// 同步菜品到云端
+    private func syncDishToCloud(_ dish: Dish) async {
+        await cloudKitManager?.syncDish(dish)
+    }
+
+    /// 同步今日餐单到云端
+    private func syncDailyMenuToCloud(_ dailyMenu: DailyMenu) async {
+        await cloudKitManager?.syncDailyMenu(dailyMenu)
+    }
+
+    /// 同步想吃菜品到云端
+    private func syncWantedDishToCloud(_ wantedDish: WantedDish) async {
+        await cloudKitManager?.syncWantedDish(wantedDish)
+    }
+
+    /// 同步统计数据到云端
+    private func syncStatisticsToCloud(_ statistics: OrderStatistics) async {
+        await cloudKitManager?.syncStatistics(statistics)
+    }
+
+    /// 从云端删除菜品
+    private func deleteDishFromCloud(_ dish: Dish) async {
+        await cloudKitManager?.deleteRecord(dish.id, type: .dish)
+    }
+
+    /// 从云端删除想吃菜品
+    private func deleteWantedDishFromCloud(_ wantedDish: WantedDish) async {
+        await cloudKitManager?.deleteRecord(wantedDish.id, type: .wantedDish)
+    }
+
+    /// 获取 CloudKit 同步状态
+    var isCloudSyncing: Bool {
+        return cloudKitManager?.isSyncing ?? false
+    }
+
+    /// 获取上次同步时间
+    var lastSyncTime: Date? {
+        return cloudKitManager?.lastSyncTime
+    }
+
+    // MARK: - 工具方法
 
     /// 保存上下文
     private func saveContext() -> Bool {
@@ -329,6 +505,13 @@ class DataManager: ObservableObject {
             self.error = "保存失败: \(error.localizedDescription)"
             return false
         }
+    }
+
+    /// 生成今日餐单编号
+    private func generateDailyMenuNumber() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMddHHmmss"
+        return "DM-\(formatter.string(from: Date()))"
     }
 
     /// 加载模拟数据
@@ -352,31 +535,20 @@ class DataManager: ObservableObject {
 
         if let family = family {
             // 添加示例菜品
-            addDish(name: "番茄炒蛋", description: "经典家常菜", price: 25.00, category: .lunch)
-            addDish(name: "红烧肉", description: "传统红烧肉", price: 38.00, category: .dinner)
-            addDish(name: "清蒸鱼", description: "新鲜海鱼", price: 58.00, category: .dinner)
-            addDish(name: "小笼包", description: "上海小笼包", price: 28.00, category: .breakfast)
+            addDish(name: "番茄炒蛋", description: "经典家常菜", category: .lunch)
+            addDish(name: "红烧肉", description: "传统红烧肉", category: .dinner)
+            addDish(name: "清蒸鱼", description: "新鲜海鱼", category: .dinner)
+            addDish(name: "小笼包", description: "上海小笼包", category: .breakfast)
+            addDish(name: "炒青菜", description: "时令青菜", category: .lunch)
+            addDish(name: "冬瓜排骨汤", description: "营养汤品", category: .dinner)
+            addDish(name: "小米粥", description: "养胃早餐", category: .breakfast)
+            addDish(name: "鸡蛋灌饼", description: "早餐小吃", category: .breakfast)
 
             // 添加示例成员
             addMember(name: "张妈妈", role: .admin)
             addMember(name: "小明", role: .member)
             addMember(name: "小红", role: .member)
         }
-    }
-}
-
-// MARK: - 购物车模型
-@Model
-class CartItem: Identifiable {
-    var id = UUID()
-    var dish: Dish
-    var quantity: Int
-    var addedAt: Date
-
-    init(dish: Dish, quantity: Int = 1) {
-        self.dish = dish
-        self.quantity = quantity
-        self.addedAt = Date()
     }
 }
 
@@ -395,151 +567,104 @@ extension DataManager {
         return stats.map { (category: $0.key, count: $0.value) }
     }
 
-    /// 获取订单统计
-    func getOrderStats() -> (total: Int, pending: Int, completed: Int, cancelled: Int) {
-        guard let family = currentFamily else { return (0, 0, 0, 0) }
-
-        let orders = family.orders
-        return (
-            total: orders.count,
-            pending: orders.filter { $0.status == .pending }.count,
-            completed: orders.filter { $0.status == .ready || $0.status == .delivered }.count,
-            cancelled: orders.filter { $0.status == .cancelled }.count
-        )
-    }
-
     /// 获取成员点餐统计
-    func getMemberOrderStats() -> [(member: FamilyMember, orderCount: Int, totalAmount: Double)] {
+    func getMemberOrderStats(statisticsType: StatisticsType) -> [(member: FamilyMember, orderCount: Int)] {
         guard let family = currentFamily else { return [] }
 
-        return family.members.map { member in
-            let memberOrders = member.orders
-            let totalAmount = memberOrders.reduce(0.0) { $0 + $1.totalAmount }
-            return (member: member, orderCount: memberOrders.count, totalAmount: totalAmount)
-        }
-    }
+        // 获取该统计类型的所有统计记录
+        let stats = getStatisticsList(statisticsType: statisticsType)
 
-    /// 生成订单号
-    private func generateOrderNumber() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd"
-        let dateStr = formatter.string(from: Date())
-        let random = String(format: "%04d", Int.random(in: 0...9999))
-        return "PK-\(dateStr)-\(random)"
-    }
+        // 按成员分组统计
+        var memberStats: [UUID: (member: FamilyMember, orderCount: Int)] = [:]
 
-    /// 检查菜品是否可用
-    private func isDishAvailable(_ dish: Dish, ids: [UUID]) -> Bool {
-        return dish.isAvailable && ids.contains(dish.id)
-    }
-
-    /// 验证订单状态转换
-    func isValidStatusTransition(from: OrderStatus, to: OrderStatus) -> Bool {
-        // 定义有效的状态转换规则
-        let validTransitions: [OrderStatus: [OrderStatus]] = [
-            .pending: [.confirmed, .cancelled],
-            .confirmed: [.cooking, .cancelled],
-            .cooking: [.ready, .cancelled],
-            .ready: [.delivered],
-            .delivered: [], // 已完成状态不能转换
-            .cancelled: [] // 已取消状态不能转换
-        ]
-
-        if let validNextStates = validTransitions[from] {
-            return validNextStates.contains(to)
-        }
-
-        return false
-    }
-
-    /// 批量更新订单状态
-    func batchUpdateOrdersStatus(orders: [Order], to status: OrderStatus) -> Bool {
-        guard !orders.isEmpty else { return true }
-
-        // 验证所有转换都有效
-        for order in orders {
-            if !isValidStatusTransition(from: order.status, to: status) {
-                error = "订单 \(order.orderNumber) 的状态转换无效"
-                return false
-            }
-        }
-
-        do {
-            for order in orders {
-                order.status = status
-                if status == .delivered || status == .cancelled {
-                    order.completedAt = Date()
+        for stat in stats {
+            if let member = family.members.first(where: { $0.id == stat.memberId }) {
+                if var existing = memberStats[stat.memberId] {
+                    memberStats[stat.memberId] = (member, existing.orderCount + stat.totalOrders)
+                } else {
+                    memberStats[stat.memberId] = (member, stat.totalOrders)
                 }
             }
-
-            try modelContext.save()
-            return true
-        } catch {
-            self.error = "批量更新订单状态失败: \(error.localizedDescription)"
-            return false
         }
+
+        return memberStats.values.sorted { $0.orderCount > $1.orderCount }
     }
 
-    /// 获取订单时间线
-    func getOrderTimeline(for order: Order) -> [OrderTimeline] {
-        do {
-            let descriptor = FetchDescriptor<OrderTimeline>(
-                predicate: #Predicate { $0.orderID == order.id },
-                sortBy: [SortDescriptor(\.timestamp, order: .reverse)]
-            )
-            return try modelContext.fetch(descriptor)
-        } catch {
-            error = "获取订单时间线失败: \(error.localizedDescription)"
-            return []
-        }
-    }
-
-    /// 搜索订单
-    func searchOrders(query: String) -> [Order] {
+    /// 获取菜品点餐排行
+    func getDishOrderRanking(statisticsType: StatisticsType) -> [(dish: Dish, orderCount: Int)] {
         guard let family = currentFamily else { return [] }
 
-        let lowerQuery = query.lowercased()
+        // 获取该统计类型的所有统计记录
+        let stats = getStatisticsList(statisticsType: statisticsType)
 
-        return family.orders.filter { order in
-            order.orderNumber.lowercased().contains(lowerQuery) ||
-            order.member?.name.lowercased().contains(lowerQuery) ?? false ||
-            order.items.contains { $0.dishName.lowercased().contains(lowerQuery) }
-        }.sorted { $0.createdAt > $1.createdAt }
+        // 按菜品分组统计
+        var dishStats: [UUID: (dish: Dish, orderCount: Int)] = [:]
+
+        for stat in stats {
+            if let dish = family.dishes.first(where: { $0.id == stat.dishId }) {
+                if var existing = dishStats[stat.dishId] {
+                    dishStats[stat.dishId] = (dish, existing.orderCount + stat.totalOrders)
+                } else {
+                    dishStats[stat.dishId] = (dish, stat.totalOrders)
+                }
+            }
+        }
+
+        return dishStats.values.sorted { $0.orderCount > $1.orderCount }
     }
 
-    /// 获取今日订单统计
-    func getTodayOrderStats() -> (count: Int, revenue: Double) {
+    /// 获取今日点餐统计
+    func getTodayOrderStats() -> (menuCount: Int, memberCount: Int) {
+        let todayMenus = getTodayDailyMenus()
+        let memberIds = Set(todayMenus.map { $0.memberId })
+
+        return (
+            menuCount: todayMenus.count,
+            memberCount: memberIds.count
+        )
+    }
+
+    /// 获取本周点餐统计
+    func getWeekOrderStats() -> (menuCount: Int, memberCount: Int) {
         guard let family = currentFamily else { return (0, 0) }
 
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        let weekStart = calendar.date(byAdding: .day, value: -7, to: today)!
 
-        let todayOrders = family.orders.filter {
-            $0.createdAt >= today && $0.createdAt < tomorrow
+        let weekMenus = family.dailyMenus.filter {
+            $0.createdAt >= weekStart && $0.createdAt <= today
         }
 
+        let memberIds = Set(weekMenus.map { $0.memberId })
+
         return (
-            count: todayOrders.count,
-            revenue: todayOrders.reduce(0.0) { $0 + $1.totalAmount }
+            menuCount: weekMenus.count,
+            memberCount: memberIds.count
         )
     }
 
-    /// 获取本周订单统计
-    func getWeekOrderStats() -> (count: Int, revenue: Double) {
-        guard let family = currentFamily else { return (0, 0) }
+    /// 按成员获取今日餐单
+    func getTodayMenusByMember() -> [UUID: [DailyMenu]] {
+        let todayMenus = getTodayDailyMenus()
+        var grouped: [UUID: [DailyMenu]] = [:]
 
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        let weekStart = calendar.dateInterval(of: .weekOfMonth, for: today)?.start ?? today
-
-        let weekOrders = family.orders.filter {
-            $0.createdAt >= weekStart
+        for menu in todayMenus {
+            grouped[menu.memberId, default: []].append(menu)
         }
 
-        return (
-            count: weekOrders.count,
-            revenue: weekOrders.reduce(0.0) { $0 + $1.totalAmount }
-        )
+        return grouped
+    }
+
+    /// 按菜品获取今日餐单
+    func getTodayMenusByDish() -> [UUID: [DailyMenu]] {
+        let todayMenus = getTodayDailyMenus()
+        var grouped: [UUID: [DailyMenu]] = [:]
+
+        for menu in todayMenus {
+            grouped[menu.dishId, default: []].append(menu)
+        }
+
+        return grouped
     }
 }
