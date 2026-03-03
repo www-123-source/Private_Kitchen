@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>私厨 · 风格选择</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; padding: 2rem; }
+    h1 { text-align: center; margin-bottom: 2rem; color: #333; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; max-width: 1200px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .card img { width: 100%; display: block; }
+    .card .label { padding: 1rem; font-weight: 600; color: #333; }
+    .card .desc { padding: 0 1rem 1rem; font-size: 0.9rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>私厨 · 原型风格预览</h1>
+  <div class="grid">
+    <div class="card">
+      <img src="style-1-warm-kitchen.png" alt="温暖厨房" />
+      <div class="label">1. 温暖厨房</div>
+      <div class="desc">米白 + 陶土红 + 鼠尾草绿 · 家庭温馨感</div>
+    </div>
+    <div class="card">
+      <img src="style-2-minimal-white.png" alt="极简白" />
+      <div class="label">2. 极简白</div>
+      <div class="desc">纯白 + 深色点缀 · 干净专业</div>
+    </div>
+    <div class="card">
+      <img src="style-3-dark-premium.png" alt="深色高级" />
+      <div class="label">3. 深色高级</div>
+      <div class="desc">深灰 + 金色 · 高端精致</div>
+    </div>
+    <div class="card">
+      <img src="style-4-fresh-vibrant.png" alt="清新活力" />
+      <div class="label">4. 清新活力</div>
+      <div class="desc">薄荷绿 + 橙黄 · 年轻健康</div>
+    </div>
+    <div class="card">
+      <img src="style-5-wireframe.png" alt="线框草图" />
+      <div class="label">5. 线框草图</div>
+      <div class="desc">灰白 + 线框 · 低保真结构</div>
+    </div>
+  </div>
+</body>
+</html>

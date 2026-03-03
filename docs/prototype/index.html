@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>私厨 - 应用原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-warm: #faf6f1;
+      --cream: #f5efe6;
+      --terracotta: #c45c3e;
+      --terracotta-light: #e8a090;
+      --sage: #7d8f6e;
+      --sage-light: #a8b89a;
+      --charcoal: #2c2926;
+      --ink: #1a1816;
+      --border: #e0d8cf;
+      --shadow: rgba(44, 41, 38, 0.08);
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg-warm);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .proto-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .proto-header h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.5rem;
+      color: var(--charcoal);
+      font-weight: 600;
+    }
+    .proto-header p {
+      font-size: 0.875rem;
+      color: var(--sage);
+      margin-top: 0.25rem;
+    }
+
+    /* Phone frame */
+    .phone {
+      width: 375px;
+      height: 812px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 40px;
+      box-shadow: 0 24px 64px var(--shadow), 0 0 0 12px var(--charcoal);
+      overflow: hidden;
+      position: relative;
+    }
+    .phone-notch {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 32px;
+      background: var(--charcoal);
+      border-radius: 0 0 20px 20px;
+      z-index: 10;
+    }
+
+    /* Screens container */
+    .screens {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: var(--cream);
+    }
+    .screen {
+      position: absolute;
+      inset: 0;
+      padding: 52px 20px 34px;
+      overflow-y: auto;
+      display: none;
+      flex-direction: column;
+      background: var(--cream);
+    }
+    .screen.active { display: flex; }
+
+    /* ========== 启动页 + 身份选择 ========== */
+    .screen-welcome .logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--terracotta);
+      text-align: center;
+      margin-top: 4rem;
+      letter-spacing: 0.02em;
+    }
+    .screen-welcome .tagline {
+      text-align: center;
+      color: var(--charcoal);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+      opacity: 0.85;
+    }
+    .screen-welcome .identity-cards {
+      margin-top: 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .identity-card {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .identity-card:hover {
+      border-color: var(--terracotta-light);
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+    .identity-card .icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--terracotta-light), var(--terracotta));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .identity-card h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    .identity-card p {
+      font-size: 0.8rem;
+      color: var(--sage);
+      margin-top: 0.2rem;
+    }
+
+    /* ========== 主导航（侧边栏） ========== */
+    .app-layout {
+      display: flex;
+      height: 100%;
+      padding-top: 52px;
+      padding-bottom: 34px;
+    }
+    .sidebar {
+      width: 72px;
+      background: #fff;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 0.5rem;
+    }
+    .sidebar-item {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--charcoal);
+      opacity: 0.6;
+      transition: opacity 0.2s, background 0.2s;
+    }
+    .sidebar-item:hover { opacity: 1; }
+    .sidebar-item.active {
+      background: var(--terracotta);
+      color: #fff;
+      opacity: 1;
+    }
+    .sidebar-item span {
+      font-size: 0.65rem;
+      display: block;
+      text-align: center;
+      margin-top: 2px;
+    }
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.25rem;
+    }
+    .page-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--charcoal);
+      margin-bottom: 1rem;
+    }
+
+    /* ========== 管理员 - 菜品管理 ========== */
+    .filter-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      background: #fff;
+      border: 1px solid var(--border);
+      color: var(--charcoal);
+      cursor: pointer;
+    }
+    .filter-chip.active {
+      background: var(--terracotta);
+      border-color: var(--terracotta);
+      color: #fff;
+    }
+    .btn-primary {
+      background: var(--terracotta);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+    .dish-list, .order-list, .member-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .dish-card, .order-card, .member-card {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 1rem;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .dish-card .thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--sage-light), var(--sage));
+    }
+    .dish-card .info { flex: 1; }
+    .dish-card .name { font-weight: 600; color: var(--charcoal); }
+    .dish-card .meta { font-size: 0.8rem; color: var(--sage); margin-top: 0.2rem; }
+    .dish-card .price { font-weight: 600; color: var(--terracotta); }
+    .dish-card .badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background: var(--sage-light);
+      color: #fff;
+    }
+    .dish-card .badge.off { background: #bbb; }
+
+    /* ========== 订单列表 ========== */
+    .order-card .order-num { font-weight: 600; color: var(--charcoal); font-size: 0.95rem; }
+    .order-card .order-meta { font-size: 0.8rem; color: var(--sage); margin-top: 0.25rem; }
+    .order-card .amount { font-weight: 600; color: var(--terracotta); }
+    .order-card .status {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: #f0ebe3;
+      color: var(--charcoal);
+    }
+    .order-card .status.pending { background: #fff3e0; color: #e65100; }
+    .order-card .status.cooking { background: #e3f2fd; color: #1565c0; }
+    .order-card .status.ready { background: #e8f5e9; color: #2e7d32; }
+
+    /* ========== 成员列表 ========== */
+    .member-card .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--terracotta-light), var(--sage-light));
+    }
+    .member-card .name { font-weight: 600; color: var(--charcoal); }
+    .member-card .role { font-size: 0.8rem; color: var(--sage); }
+
+    /* ========== 顾客端 - 点餐 ========== */
+    .dish-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    .dish-tile {
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .dish-tile .thumb {
+      height: 88px;
+      background: linear-gradient(135deg, var(--sage-light), var(--sage));
+    }
+    .dish-tile .body { padding: 0.6rem; }
+    .dish-tile .name { font-size: 0.9rem; font-weight: 600; color: var(--charcoal); }
+    .dish-tile .price { font-size: 0.85rem; color: var(--terracotta); font-weight: 600; margin-top: 0.2rem; }
+
+    /* ========== 购物车 ========== */
+    .cart-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cart-item .thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--sage-light), var(--sage));
+    }
+    .cart-item .name { font-weight: 500; flex: 1; }
+    .cart-item .qty {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .cart-item .qty button {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .cart-footer {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 2px solid var(--border);
+    }
+    .cart-total { font-family: 'Noto Serif SC', serif; font-size: 1.1rem; font-weight: 600; }
+    .btn-block {
+      width: 100%;
+      padding: 0.9rem;
+      margin-top: 0.75rem;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--terracotta);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ========== 菜谱（通用） ========== */
+    .recipe-card {
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+    .recipe-card .cover {
+      height: 120px;
+      background: linear-gradient(135deg, var(--terracotta-light), var(--sage));
+    }
+    .recipe-card .body { padding: 0.9rem; }
+    .recipe-card .name { font-family: 'Noto Serif SC', serif; font-weight: 600; font-size: 1rem; }
+    .recipe-card .merchant { font-size: 0.8rem; color: var(--sage); margin-top: 0.3rem; }
+    .recipe-card .rating { font-size: 0.8rem; color: var(--terracotta); margin-top: 0.25rem; }
+
+    /* ========== 设置页 ========== */
+    .settings-list {
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .settings-list .row {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .settings-list .row:last-child { border-bottom: none; }
+
+    /* ========== 全局导航（返回/切换端） ========== */
+    .global-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .back-btn {
+      padding: 0.4rem 0.8rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--charcoal);
+    }
+    .back-btn:hover { background: #fff; }
+  </style>
+</head>
+<body>
+  <div class="proto-header">
+    <h1>私厨 · 应用原型</h1>
+    <p>根据 2026-02-28 设计文档 · 点击界面元素切换页面</p>
+  </div>
+
+  <div class="phone">
+    <div class="phone-notch"></div>
+    <div class="screens">
+      <!-- 1. 启动页 - 身份选择 -->
+      <div class="screen screen-welcome active" data-screen="welcome">
+        <div class="logo">私厨</div>
+        <div class="tagline">家庭厨房点餐</div>
+        <div class="identity-cards">
+          <div class="identity-card" data-goto="admin">
+            <div class="icon">👨‍🍳</div>
+            <div>
+              <h3>我是厨房管理员</h3>
+              <p>管理菜品、订单与成员</p>
+            </div>
+          </div>
+          <div class="identity-card" data-goto="customer">
+            <div class="icon">👨‍👩‍👧</div>
+            <div>
+              <h3>我是家庭成员</h3>
+              <p>浏览菜品、点餐与查看订单</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 管理员端 -->
+      <div class="screen screen-admin" data-screen="admin">
+        <div class="app-layout">
+          <nav class="sidebar">
+            <div class="sidebar-item active" data-admin-tab="dishes" title="菜品">🍽<span>菜品</span></div>
+            <div class="sidebar-item" data-admin-tab="orders" title="订单">📋<span>订单</span></div>
+            <div class="sidebar-item" data-admin-tab="members" title="成员">👥<span>成员</span></div>
+            <div class="sidebar-item" data-admin-tab="recipes" title="菜谱">📖<span>菜谱</span></div>
+            <div class="sidebar-item" data-admin-tab="settings" title="设置">⚙️<span>设置</span></div>
+          </nav>
+          <div class="main-content">
+            <div class="global-nav">
+              <button class="back-btn" data-goto="welcome">← 切换身份</button>
+            </div>
+            <div class="admin-panel admin-dishes">
+              <h2 class="page-title">菜品管理</h2>
+              <div class="filter-row">
+                <span class="filter-chip active">全部</span>
+                <span class="filter-chip">早餐</span>
+                <span class="filter-chip">午餐</span>
+                <span class="filter-chip">晚餐</span>
+                <span class="filter-chip">零食</span>
+                <span class="filter-chip">饮品</span>
+              </div>
+              <button class="btn-primary">+ 新增菜品</button>
+              <div class="dish-list">
+                <div class="dish-card">
+                  <div class="thumb"></div>
+                  <div class="info">
+                    <div class="name">番茄炒蛋</div>
+                    <div class="meta">午餐 · 家常菜</div>
+                  </div>
+                  <div class="price">¥12</div>
+                  <span class="badge">上架</span>
+                </div>
+                <div class="dish-card">
+                  <div class="thumb"></div>
+                  <div class="info">
+                    <div class="name">皮蛋瘦肉粥</div>
+                    <div class="meta">早餐 · 粥品</div>
+                  </div>
+                  <div class="price">¥8</div>
+                  <span class="badge off">下架</span>
+                </div>
+                <div class="dish-card">
+                  <div class="thumb"></div>
+                  <div class="info">
+                    <div class="name">红烧肉</div>
+                    <div class="meta">晚餐 · 荤菜</div>
+                  </div>
+                  <div class="price">¥28</div>
+                  <span class="badge">上架</span>
+                </div>
+              </div>
+            </div>
+            <div class="admin-panel admin-orders" style="display:none;">
+              <h2 class="page-title">订单管理</h2>
+              <div class="filter-row">
+                <span class="filter-chip active">全部</span>
+                <span class="filter-chip">待接单</span>
+                <span class="filter-chip">制作中</span>
+                <span class="filter-chip">已完成</span>
+              </div>
+              <div class="order-list">
+                <div class="order-card">
+                  <div class="info">
+                    <div class="order-num">#20260301001</div>
+                    <div class="order-meta">小明 · 2 件商品</div>
+                  </div>
+                  <div class="amount">¥40</div>
+                  <span class="status pending">待接单</span>
+                </div>
+                <div class="order-card">
+                  <div class="info">
+                    <div class="order-num">#20260301002</div>
+                    <div class="order-meta">小红 · 1 件商品</div>
+                  </div>
+                  <div class="amount">¥12</div>
+                  <span class="status cooking">制作中</span>
+                </div>
+                <div class="order-card">
+                  <div class="info">
+                    <div class="order-num">#20260228003</div>
+                    <div class="order-meta">爸爸 · 3 件商品</div>
+                  </div>
+                  <div class="amount">¥56</div>
+                  <span class="status ready">已完成</span>
+                </div>
+              </div>
+            </div>
+            <div class="admin-panel admin-members" style="display:none;">
+              <h2 class="page-title">成员管理</h2>
+              <button class="btn-primary">+ 添加成员</button>
+              <div class="member-list">
+                <div class="member-card">
+                  <div class="avatar"></div>
+                  <div class="info">
+                    <div class="name">我（管理员）</div>
+                    <div class="role">厨房管理员</div>
+                  </div>
+                </div>
+                <div class="member-card">
+                  <div class="avatar"></div>
+                  <div class="info">
+                    <div class="name">小明</div>
+                    <div class="role">家庭成员</div>
+                  </div>
+                </div>
+                <div class="member-card">
+                  <div class="avatar"></div>
+                  <div class="info">
+                    <div class="name">小红</div>
+                    <div class="role">家庭成员</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="admin-panel admin-recipes" style="display:none;">
+              <h2 class="page-title">私人菜谱</h2>
+              <div class="filter-row">
+                <span class="filter-chip active">全部地区</span>
+                <span class="filter-chip">川菜</span>
+                <span class="filter-chip">粤菜</span>
+              </div>
+              <div class="recipe-card">
+                <div class="cover"></div>
+                <div class="body">
+                  <div class="name">回锅肉</div>
+                  <div class="merchant">成都私房 · 四川</div>
+                  <div class="rating">⭐ 4.8 · 128 条评论</div>
+                </div>
+              </div>
+              <div class="recipe-card">
+                <div class="cover"></div>
+                <div class="body">
+                  <div class="name">白切鸡</div>
+                  <div class="merchant">广州家常 · 广东</div>
+                  <div class="rating">⭐ 4.6 · 96 条评论</div>
+                </div>
+              </div>
+            </div>
+            <div class="admin-panel admin-settings" style="display:none;">
+              <h2 class="page-title">应用设置</h2>
+              <div class="settings-list">
+                <div class="row">家庭名称 <span>我的小家</span></div>
+                <div class="row">数据备份 <span>—</span></div>
+                <div class="row">关于私厨 <span>v1.0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. 顾客端 -->
+      <div class="screen screen-customer" data-screen="customer">
+        <div class="app-layout">
+          <nav class="sidebar">
+            <div class="sidebar-item active" data-customer-tab="order" title="点餐">🍽<span>点餐</span></div>
+            <div class="sidebar-item" data-customer-tab="cart" title="购物车">🛒<span>购物车</span></div>
+            <div class="sidebar-item" data-customer-tab="myorders" title="我的订单">📋<span>订单</span></div>
+            <div class="sidebar-item" data-customer-tab="recipes" title="菜谱">📖<span>菜谱</span></div>
+          </nav>
+          <div class="main-content">
+            <div class="global-nav">
+              <button class="back-btn" data-goto="welcome">← 切换身份</button>
+            </div>
+            <div class="customer-panel customer-order">
+              <h2 class="page-title">点餐</h2>
+              <div class="filter-row">
+                <span class="filter-chip active">全部</span>
+                <span class="filter-chip">早餐</span>
+                <span class="filter-chip">午餐</span>
+                <span class="filter-chip">晚餐</span>
+                <span class="filter-chip">饮品</span>
+              </div>
+              <div class="dish-grid">
+                <div class="dish-tile">
+                  <div class="thumb"></div>
+                  <div class="body">
+                    <div class="name">番茄炒蛋</div>
+                    <div class="price">¥12</div>
+                  </div>
+                </div>
+                <div class="dish-tile">
+                  <div class="thumb"></div>
+                  <div class="body">
+                    <div class="name">红烧肉</div>
+                    <div class="price">¥28</div>
+                  </div>
+                </div>
+                <div class="dish-tile">
+                  <div class="thumb"></div>
+                  <div class="body">
+                    <div class="name">酸辣土豆丝</div>
+                    <div class="price">¥10</div>
+                  </div>
+                </div>
+                <div class="dish-tile">
+                  <div class="thumb"></div>
+                  <div class="body">
+                    <div class="name">豆浆</div>
+                    <div class="price">¥3</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="customer-panel customer-cart" style="display:none;">
+              <h2 class="page-title">购物车</h2>
+              <div class="cart-item">
+                <div class="thumb"></div>
+                <div class="name">番茄炒蛋</div>
+                <div class="qty">
+                  <button>-</button><span>2</span><button>+</button>
+                </div>
+                <div class="price">¥24</div>
+              </div>
+              <div class="cart-item">
+                <div class="thumb"></div>
+                <div class="name">豆浆</div>
+                <div class="qty">
+                  <button>-</button><span>1</span><button>+</button>
+                </div>
+                <div class="price">¥3</div>
+              </div>
+              <div class="cart-footer">
+                <div class="cart-total">合计：¥27</div>
+                <button class="btn-block">去结算</button>
+              </div>
+            </div>
+            <div class="customer-panel customer-myorders" style="display:none;">
+              <h2 class="page-title">我的订单</h2>
+              <div class="filter-row">
+                <span class="filter-chip active">全部</span>
+                <span class="filter-chip">待接单</span>
+                <span class="filter-chip">制作中</span>
+                <span class="filter-chip">已上菜</span>
+              </div>
+              <div class="order-list">
+                <div class="order-card">
+                  <div class="info">
+                    <div class="order-num">#20260301001</div>
+                    <div class="order-meta">2 件 · 今天 12:30</div>
+                  </div>
+                  <div class="amount">¥27</div>
+                  <span class="status pending">待接单</span>
+                </div>
+                <div class="order-card">
+                  <div class="info">
+                    <div class="order-num">#20260228102</div>
+                    <div class="order-meta">3 件 · 昨天 19:00</div>
+                  </div>
+                  <div class="amount">¥56</div>
+                  <span class="status ready">已上菜</span>
+                </div>
+              </div>
+            </div>
+            <div class="customer-panel customer-recipes" style="display:none;">
+              <h2 class="page-title">私人菜谱</h2>
+              <div class="filter-row">
+                <span class="filter-chip active">全部地区</span>
+                <span class="filter-chip">川菜</span>
+                <span class="filter-chip">粤菜</span>
+              </div>
+              <div class="recipe-card">
+                <div class="cover"></div>
+                <div class="body">
+                  <div class="name">回锅肉</div>
+                  <div class="merchant">成都私房 · 四川</div>
+                  <div class="rating">⭐ 4.8 · 128 条评论 · ♥ 收藏</div>
+                </div>
+              </div>
+              <div class="recipe-card">
+                <div class="cover"></div>
+                <div class="body">
+                  <div class="name">白切鸡</div>
+                  <div class="merchant">广州家常 · 广东</div>
+                  <div class="rating">⭐ 4.6 · 96 条评论</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const screens = document.querySelectorAll('.screen');
+    const show = (id) => {
+      screens.forEach(s => s.classList.remove('active'));
+      const el = document.querySelector(`[data-screen="${id}"]`);
+      if (el) el.classList.add('active');
+    };
+
+    document.querySelectorAll('[data-goto]').forEach(el => {
+      el.addEventListener('click', () => show(el.dataset.goto));
+    });
+
+    document.querySelectorAll('[data-admin-tab]').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.screen-admin .sidebar-item').forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+        document.querySelectorAll('.admin-panel').forEach(p => p.style.display = 'none');
+        const tab = el.dataset.adminTab;
+        const panel = document.querySelector(`.admin-${tab}`);
+        if (panel) panel.style.display = 'block';
+      });
+    });
+
+    document.querySelectorAll('[data-customer-tab]').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.screen-customer .sidebar-item').forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+        document.querySelectorAll('.customer-panel').forEach(p => p.style.display = 'none');
+        const tab = el.dataset.customerTab;
+        const panel = document.querySelector(`.customer-${tab}`);
+        if (panel) panel.style.display = 'block';
+      });
+    });
+
+    // 菜品详情浮层
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.innerHTML = `
+      <div class="overlay-backdrop" data-close-overlay></div>
+      <div class="overlay-card overlay-dish">
+        <div class="overlay-dish-hero"></div>
+        <div class="overlay-body">
+          <h3>番茄炒蛋</h3>
+          <p class="overlay-desc">家常番茄炒蛋，酸甜可口，适合配米饭。</p>
+          <div class="overlay-price">¥12</div>
+          <div class="overlay-actions">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">1</span>
+            <button class="qty-btn">+</button>
+            <button class="btn-add-cart">加入购物车</button>
+          </div>
+        </div>
+        <button class="overlay-close" data-close-overlay>×</button>
+      </div>
+    `;
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;';
+    document.body.appendChild(overlay);
+
+    const overlayStyles = document.createElement('style');
+    overlayStyles.textContent = `
+      .overlay .overlay-backdrop { position:absolute;inset:0;background:rgba(0,0,0,0.4); }
+      .overlay .overlay-card { position:relative;background:#fff;border-radius:20px;max-width:340px;width:100%;overflow:hidden;box-shadow:0 24px 48px rgba(0,0,0,0.15); }
+      .overlay .overlay-dish-hero { height:160px;background:linear-gradient(135deg, var(--sage-light), var(--sage)); }
+      .overlay .overlay-body { padding:1.25rem; }
+      .overlay .overlay-body h3 { font-family:"Noto Serif SC",serif;font-size:1.25rem;color:var(--charcoal); }
+      .overlay-desc { font-size:0.9rem;color:var(--sage);margin-top:0.5rem; }
+      .overlay-price { font-size:1.25rem;font-weight:700;color:var(--terracotta);margin-top:0.5rem; }
+      .overlay-actions { display:flex;align-items:center;gap:0.75rem;margin-top:1rem; }
+      .overlay-actions .qty-btn { width:36px;height:36px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:1.2rem; }
+      .overlay-actions .qty-num { min-width:1.5rem;text-align:center; }
+      .overlay-actions .btn-add-cart { flex:1;padding:0.75rem;background:var(--terracotta);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer; }
+      .overlay-close { position:absolute;top:0.75rem;right:0.75rem;width:32px;height:32px;border:none;background:rgba(0,0,0,0.3);color:#fff;border-radius:50%;font-size:1.25rem;cursor:pointer;line-height:1; }
+    `;
+    document.head.appendChild(overlayStyles);
+
+    function showOverlay() { overlay.style.display = 'flex'; }
+    function hideOverlay() { overlay.style.display = 'none'; }
+    overlay.querySelectorAll('[data-close-overlay]').forEach(el => el.addEventListener('click', hideOverlay));
+    document.querySelectorAll('.customer-order .dish-tile').forEach(tile => tile.addEventListener('click', showOverlay));
+  </script>
+</body>
+</html>
