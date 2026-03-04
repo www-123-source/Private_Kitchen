@@ -1,0 +1,2 @@
+仔细阅读并理解以下这些文档，项目设计文档：2026-02-28-private-kitchen-design.md；项目实施计划文档：2026-03-03-implementation-plan.md；项目执行策略文档：execution-strategy.md；项目执行进度文档：execution-progress.md，以这些文档为标准进行
+claude --resume 7c17abfd-d853-4010-9a7d-7e1c99a86be1

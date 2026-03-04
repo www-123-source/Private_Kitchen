@@ -1,0 +1,192 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXFileReference section */
+		21A6CFB62AC3F0C600BFA6CB /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "Package.swift"; path = Package.swift; sourceTree = "<group>"; };
+		21A6CFBA2AC3F0C600BFA6CB /* PrivateKitchenApp */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrivateKitchenApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		21A6CFD02AC3F0C600BFA6CB /* PrivateKitchenApp */ = {isa = PBXFileReference; lastKnownFileType = folder; name = PrivateKitchenApp; path = "PrivateKitchenApp"; sourceTree = "<group>"; };
+		21A6CFD12AC3F0C600BFA6CB /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Models; path = "PrivateKitchenApp/Models"; sourceTree = "<group>"; };
+		21A6CFD22AC3F0C600BFA6CB /* Views */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Views; path = "PrivateKitchenApp/Views"; sourceTree = "<group>"; };
+		21A6CFD32AC3F0C600BFA6CB /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "main.swift"; path = "PrivateKitchenApp/main.swift"; sourceTree = "<group>"; };
+		21A6CFD42AC3F0C600BFA6CB /* Sources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Sources; path = "PrivateKitchenApp/Sources"; sourceTree = "<group>"; };
+		21A6CFD52AC3F0C600BFA6CB /* Documentation */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Documentation; path = "PrivateKitchenApp/Documentation"; sourceTree = "<group>"; };
+		21A6CFD62AC3F0C600BFA6CB /* Theme */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Theme; path = "PrivateKitchenApp/Theme"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		21A6CFB32AC3F0C600BFA6CB = {
+			isa = PBXGroup;
+			children = (
+				21A6CFD02AC3F0C600BFA6CB /* PrivateKitchenApp */,
+				21A6CFB62AC3F0C600BFA6CB /* Package.swift */,
+				21A6CFCC2AC3F0C600BFA6CB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		21A6CFD02AC3F0C600BFA6CB /* PrivateKitchenApp */ = {
+			isa = PBXGroup;
+			children = (
+				21A6CFD32AC3F0C600BFA6CB /* main.swift */,
+				21A6CFD12AC3F0C600BFA6CB /* Models */,
+				21A6CFD22AC3F0C600BFA6CB /* Views */,
+				21A6CFD42AC3F0C600BFA6CB /* Sources */,
+				21A6CFD52AC3F0C600BFA6CB /* Documentation */,
+				21A6CFD62AC3F0C600BFA6CB /* Theme */,
+			);
+			path = PrivateKitchenApp;
+			sourceTree = "<group>";
+		};
+		21A6CFCC2AC3F0C600BFA6CB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				21A6CFBA2AC3F0C600BFA6CB /* PrivateKitchenApp */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		21A6CFB92AC3F0C600BFA6CB /* PrivateKitchenApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21A6CFBE2AC3F0C600BFA6CB /* Build configuration list for PBXNativeTarget "PrivateKitchenApp" */;
+			buildPhases = (
+				21A6CFB42AC3F0C600BFA6CB /* Sources */,
+				21A6CFB52AC3F0C600BFA6CB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "PrivateKitchenApp";
+			productName = "PrivateKitchenApp";
+			productReference = 21A6CFBA2AC3F0C600BFA6CB /* PrivateKitchenApp */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		21A6CFB22AC3F0C600BFA6CB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1430;
+				ORGANIZATIONNAME = "";
+				TargetAttributes = {
+					21A6CFB92AC3F0C600BFA6CB = {
+						CreatedOnToolsVersion = 14.3;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 21A6CFB72AC3F0C600BFA6CB /* Build configuration list for PBXProject "PrivateKitchenApp" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 21A6CFB32AC3F0C600BFA6CB;
+			productRefGroup = 21A6CFCC2AC3F0C600BFA6CB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				21A6CFB92AC3F0C600BFA6CB /* PrivateKitchenApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		21A6CFB42AC3F0C600BFA6CB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		21A6CFB52AC3F0C600BFA6CB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		21A6CFBD2AC3F0C600BFA6CB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_NS_ASSERTIONS = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		21A6CFBE2AC3F0C600BFA6CB /* Build configuration list for PBXNativeTarget "PrivateKitchenApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21A6CFBD2AC3F0C600BFA6CB /* Debug */,
+				21A6CFBF2AC3F0C600BFA6CB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		21A6CFBF2AC3F0C600BFA6CB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_THUMB_SUPPORT = YES;
+				GCC_UNROLL_LOOPS = YES;
+				MOMENTICS_STRIP_ENABLED = YES;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		21A6CFB72AC3F0C600BFA6CB /* Build configuration list for PBXProject "PrivateKitchenApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21A6CFBD2AC3F0C600BFA6CB /* Debug */,
+				21A6CFBF2AC3F0C600BFA6CB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin PBXFileReference section */
+		21A6CFB82AC3F0C600BFA6CB /* PrivateKitchenApp.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = "PrivateKitchenApp.entitlements"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+	};
+	rootObject = 21A6CFB22AC3F0C600BFA6CB /* Project object */;
+}

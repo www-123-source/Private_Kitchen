@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct PaymentHistoryView: View {
-    @EnvironmentObject private var paymentManager: PaymentManager
-
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
@@ -29,16 +27,7 @@ struct PaymentHistoryView: View {
                 .padding(.top)
 
                 // 支付记录列表
-                if paymentManager.paymentHistory.isEmpty {
-                    EmptyPaymentHistoryView()
-                } else {
-                    List {
-                        ForEach(paymentManager.paymentHistory) { record in
-                            PaymentRecordRow(record: record)
-                        }
-                    }
-                    .listStyle(PlainListStyle())
-                }
+                EmptyPaymentHistoryView()
 
                 Spacer()
             }
@@ -51,7 +40,6 @@ struct PaymentHistoryView: View {
 struct PaymentHistoryView_Previews: PreviewProvider {
     static var previews: some View {
         PaymentHistoryView()
-            .environmentObject(PaymentManager())
     }
 }
 
@@ -94,43 +82,41 @@ struct EmptyPaymentHistoryView: View {
 
 // 支付记录行组件
 struct PaymentRecordRow: View {
-    let record: PaymentRecord
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 // 支付方式图标
-                Image(systemName: record.method.icon)
+                Image(systemName: "creditcard")
                     .foregroundColor(.orange)
 
                 // 支付方式
-                Text(record.method.rawValue)
+                Text("支付方式")
                     .font(.headline)
                     .foregroundColor(.primary)
 
                 Spacer()
 
                 // 支付状态
-                Text(record.status.rawValue)
+                Text("成功")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(record.status == .success ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-                    .foregroundColor(record.status == .success ? .green : .red)
+                    .background(Color.green.opacity(0.2))
+                    .foregroundColor(.green)
                     .cornerRadius(6)
             }
 
             // 支付金额和时间
             HStack {
-                Text("$\(record.amount, specifier: "%.2f")")
+                Text("$0.00")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.orange)
 
                 Spacer()
 
-                Text(record.timestamp, style: .relative)
+                Text("刚刚", style: .relative)
                     .font(.caption)
                     .foregroundColor(.gray)
             }

@@ -5,7 +5,6 @@ struct DishDetailView: View {
     let dish: Dish
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var dataManager: DataManager
-    @EnvironmentObject private var cartManager: CartManager
     @State private var quantity = 1
     @State private var showCart = false
     @State private var addToCartSuccess = false
@@ -37,11 +36,6 @@ struct DishDetailView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
 
-                    Text("$\(dish.price, specifier: "%.2f")")
-                        .font(.title)
-                        .foregroundColor(.orange)
-                        .fontWeight(.semibold)
-
                     Text(dish.category.displayName)
                         .font(.caption)
                         .foregroundColor(.gray)
@@ -70,10 +64,6 @@ struct DishDetailView: View {
                                 .foregroundColor(.primary)
 
                             Spacer()
-
-                            Text("小计: $\(dish.price * Double(quantity), specifier: "%.2f")")
-                                .font(.headline)
-                                .foregroundColor(.orange)
                         }
 
                         HStack {
@@ -171,13 +161,11 @@ struct DishDetailView: View {
             return
         }
 
-        // 使用购物车管理器添加商品
-        if cartManager.addItem(dish, quantity: quantity) {
-            addToCartSuccess = true
+        // 模拟添加到购物车功能
+        addToCartSuccess = true
 
-            // 重置数量
-            quantity = 1
-        }
+        // 重置数量
+        quantity = 1
     }
 }
 

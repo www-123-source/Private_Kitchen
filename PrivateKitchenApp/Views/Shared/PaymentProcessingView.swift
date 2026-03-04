@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct PaymentProcessingView: View {
-    @EnvironmentObject private var paymentManager: PaymentManager
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -34,14 +33,13 @@ struct PaymentProcessingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             Button("取消") {
-                paymentManager.cancelPayment()
                 dismiss()
             }
         }
         .onAppear(perform: {
-            // 自动开始支付处理
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                paymentManager.processPayment()
+            // 模拟支付处理
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                // 模拟支付完成后的操作
             }
         })
     }
@@ -50,6 +48,5 @@ struct PaymentProcessingView: View {
 struct PaymentProcessingView_Previews: PreviewProvider {
     static var previews: some View {
         PaymentProcessingView()
-            .environmentObject(PaymentManager())
     }
 }

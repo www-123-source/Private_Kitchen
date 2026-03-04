@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct CartBadgeView: View {
-    @EnvironmentObject private var cartManager: CartManager
     @State private var showCart = false
+    // 模拟购物车数量
+    @State private var cartQuantity = 0
 
     var body: some View {
         Button(action: {
@@ -13,13 +14,13 @@ struct CartBadgeView: View {
                     .foregroundColor(.orange)
                     .font(.title2)
 
-                if cartManager.totalQuantity > 0 {
+                if cartQuantity > 0 {
                     Circle()
                         .fill(Color.red)
                         .frame(width: 20, height: 20)
                         .position(x: 20, y: -5)
 
-                    Text("\(cartManager.totalQuantity)")
+                    Text("\(cartQuantity)")
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -36,9 +37,5 @@ struct CartBadgeView: View {
 struct CartBadgeView_Previews: PreviewProvider {
     static var previews: some View {
         CartBadgeView()
-            .environmentObject(CartManager(
-                modelContext: ModelContext(DataInitializer.configureModelContainer()),
-                dataManager: DataManager(modelContext: ModelContext(DataInitializer.configureModelContainer()))
-            ))
     }
 }

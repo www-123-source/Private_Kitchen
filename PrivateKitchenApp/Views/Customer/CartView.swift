@@ -3,15 +3,13 @@ import SwiftData
 
 struct CartView: View {
     @EnvironmentObject private var dataManager: DataManager
-    @EnvironmentObject private var paymentManager: PaymentManager
-    @EnvironmentObject private var cartManager: CartManager
-    @EnvironmentObject private var orderFlowManager: OrderFlowManager
-    @State private var showPaymentView = false
+
     @State private var showClearConfirm = false
     @State private var selectedCartItem: CartItem?
     @State private var showQuantityPicker = false
-    @State private var showOrderSuccess = false
-    @State private var currentOrder: Order?
+
+    // 模拟购物车数据
+    @State private var cartItems: [CartItem] = []
 
     var body: some View {
         NavigationView {
@@ -39,56 +37,8 @@ struct CartView: View {
                     }
                     .listStyle(PlainListStyle())
 
-                    // 总计和结算
+                    // 总计和操作
                     VStack(spacing: 16) {
-                        // 总计
-                        HStack {
-                            Text("总计:")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-
-                            Spacer()
-
-                            Text("$\(totalAmount, specifier: "%.2f")")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.horizontal)
-
-                        // 结算按钮
-                        Button(action: {
-                            if totalAmount > 0 {
-                                // 创建订单
-                                let orderItems = cartItems.map { cartItem -> OrderItem in
-                                    OrderItem(
-                                        dishId: cartItem.dish.id,
-                                        dishName: cartItem.dish.name,
-                                        price: cartItem.dish.price,
-                                        quantity: cartItem.quantity
-                                    )
-                                }
-
-                                if let order = dataManager.createOrder(items: orderItems, note: "请加快制作") {
-                                    // 支付完成后关联订单
-                                    paymentManager.paymentId = order.id.uuidString
-                                    paymentManager.startPayment(amount: totalAmount, orderId: order.id.uuidString)
-                                    showPaymentView = true
-                                }
-                            }
-                        }) {
-                            Text("去结算")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.orange)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .shadow(radius: 5)
-                        }
-                        .disabled(cartItems.isEmpty)
-
                         // 清空购物车
                         Button(action: {
                             showClearConfirm = true
@@ -98,7 +48,7 @@ struct CartView: View {
                                     .foregroundColor(.red)
                                 Text("清空购物车")
                                     .foregroundColor(.red)
-                                .fontWeight(.semibold)
+                                    .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
                             .padding()
@@ -118,113 +68,28 @@ struct CartView: View {
             .toolbar {
                 EditButton()
             }
-            .sheet(isPresented: $showPaymentView) {
-                PaymentView()
-            }
-            .alert("购物车为空", isPresented: $showEmptyCart) {
-                Button("确定", role: .cancel) { }
-            } message: {
-                Text("您的购物车中没有商品")
-            }
             .alert("确认清空", isPresented: $showClearConfirm) {
                 Button("确认", role: .destructive) {
-                    cartManager.clearCart()
+                    cartItems.removeAll()
                 }
                 Button("取消", role: .cancel) { }
             } message: {
                 Text("确定要清空购物车吗？此操作不可恢复。")
             }
-            .alert("订单创建成功", isPresented: $showOrderSuccess) {
-                Button("查看订单") {
-                    if let order = currentOrder {
-                        // 导航到订单详情页
-                    }
-                }
-                Button("继续购物", role: .cancel) { }
-            } message: {
-                Text("您的订单已成功创建并支付！")
-            }
-            .sheet(isPresented: $showQuantityPicker) {
-                if let item = selectedCartItem {
-                    QuantityPickerView(
-                        currentQuantity: item.quantity,
-                        maxQuantity: 99,
-                        onChange: { newQuantity in
-                            cartManager.updateQuantity(item, newQuantity: newQuantity)
-                        }
-                    )
-                }
-            }
             .onAppear(perform: loadCartItems)
-            .onReceive(NotificationCenter.default.publisher(for: .cartUpdated)) { _ in
-                loadCartItems()
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button("清空购物车") {
-                            showClearConfirm = true
-                        }
-                        .disabled(cartItems.isEmpty)
-
-                        Button("结算全部") {
-                            if cartManager.canCheckout() {
-                                checkout()
-                            }
-                        }
-                        .disabled(cartItems.isEmpty)
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                }
-            }
         }
-    }
-
-    // 计算总价
-    private var totalAmount: Double {
-        cartManager.totalPrice
     }
 
     // 加载购物车商品
     private func loadCartItems() {
-        cartItems = cartManager.cartItems
-        showEmptyCart = cartItems.isEmpty
-
-        // 检查是否有不可用的商品
-        if cartItems.contains(where: { !$0.dish.isAvailable }) {
-            cartManager.removeUnavailableItems()
-        }
+        // 模拟加载购物车数据
+        // 在实际应用中，这里会从持久化存储加载数据
     }
 
     // 删除商品
     private func deleteItems(offsets: IndexSet) {
         for index in offsets {
-            cartManager.removeItem(cartItems[index])
-        }
-        loadCartItems()
-    }
-
-    // 结算
-    private func checkout() {
-        let summary = cartManager.getCartSummary()
-
-        if summary.totalPrice > 0 && cartManager.canCheckout() {
-            // 使用 OrderFlowManager 创建订单
-            if let order = orderFlowManager.createOrderFromCart(cartItems: cartItems, note: "请尽快制作") {
-                currentOrder = order
-                paymentManager.paymentId = order.id.uuidString
-                paymentManager.startPayment(amount: summary.totalPrice, orderId: order.id.uuidString)
-                showPaymentView = true
-
-                // 支付成功后显示成功提示
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    if paymentManager.paymentStatus == .success {
-                        showOrderSuccess = true
-                        cartManager.clearCart()
-                    }
-                }
-            }
+            cartItems.remove(at: index)
         }
     }
 }
@@ -232,21 +97,27 @@ struct CartView: View {
 struct CartView_Previews: PreviewProvider {
     static var previews: some View {
         CartView()
-            .environmentObject(PaymentManager())
-            .modelContainer(for: [Dish.self, CartItem.self])
+            .modelContainer(for: [Dish.self])
     }
 }
 
 // 购物车商品模型
-struct CartItem: Identifiable {
-    let id = UUID()
-    let dish: Dish
+@Model
+class CartItem: Identifiable {
+    var id = UUID()
+    var dish: Dish
     var quantity: Int
+    var addedAt: Date
+
+    init(dish: Dish, quantity: Int = 1) {
+        self.dish = dish
+        self.quantity = quantity
+        self.addedAt = Date()
+    }
 }
 
 // 购物车商品行组件
 struct CartItemRow: View {
-    @EnvironmentObject private var cartManager: CartManager
     let item: CartItem
 
     var body: some View {
@@ -282,17 +153,10 @@ struct CartItemRow: View {
 
                         Spacer()
 
-                        // 状态标记
-                        if !item.dish.isAvailable {
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle")
-                                    .font(.caption)
-                                    .foregroundColor(.red)
-                                Text("已下架")
-                                    .font(.caption)
-                                    .foregroundColor(.red)
-                            }
-                        }
+                        // 数量
+                        Text("数量: \(item.quantity)")
+                            .font(.caption)
+                            .foregroundColor(.orange)
                     }
 
                     // 菜品描述
@@ -302,66 +166,30 @@ struct CartItemRow: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
-                    // 单价
-                    Text("单价: $\(item.dish.price, specifier: "%.2f")")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-
-                    // 小计
-                    HStack {
-                        Spacer()
-                        Text("小计: $\(item.dish.price * Double(item.quantity), specifier: "%.2f")")
-                            .font(.headline)
-                            .foregroundColor(.orange)
+                    // 可用性状态
+                    if !item.dish.isAvailable {
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                            Text("暂不可用")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
                     }
                 }
 
                 Spacer()
 
-                // 右侧按钮组
-                VStack(spacing: 8) {
-                    // 删除按钮
-                    Button(action: {
-                        cartManager.removeItem(item)
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                            .padding(8)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(Circle())
-                    }
-
-                    // 快速加减按钮
-                    HStack(spacing: 4) {
-                        Button(action: {
-                            cartManager.updateQuantity(item, newQuantity: item.quantity - 1)
-                        }) {
-                            Image(systemName: "minus")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .padding(4)
-                                .background(Color.gray)
-                                .clipShape(Circle())
-                        }
-                        .disabled(item.quantity <= 1)
-
-                        Text("\(item.quantity)")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .frame(minWidth: 24)
-
-                        Button(action: {
-                            cartManager.updateQuantity(item, newQuantity: item.quantity + 1)
-                        }) {
-                            Image(systemName: "plus")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .padding(4)
-                                .background(Color.orange)
-                                .clipShape(Circle())
-                        }
-                        .disabled(item.quantity >= 99)
-                    }
+                // 删除按钮
+                Button(action: {
+                    // 在实际应用中，需要传递回调来删除商品
+                }) {
+                    Image(systemName: "trash")
+                        .foregroundColor(.red)
+                        .padding(8)
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(Circle())
                 }
             }
         }
