@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,10 +6,8 @@ import PackageDescription
 let package = Package(
     name: "PrivateKitchenApp",
     platforms: [
-        .iOS(.v17),
-        .macOS(.v14),
-        .watchOS(.v10),
-        .tvOS(.v17)
+        .iOS("14.0"),
+        .macOS("10.15")
     ],
     products: [
         .executable(
@@ -28,10 +26,6 @@ let package = Package(
                 "Sources"
             ],
             resources: [
-                // 添加资源文件，如果有的话
-            ],
-            swiftSettings: [
-                .enableExperimentalFeature("StrictConcurrency"),
             ]
         )
     ]
